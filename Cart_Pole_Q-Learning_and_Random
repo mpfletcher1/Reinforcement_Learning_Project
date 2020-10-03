@@ -1,0 +1,197 @@
+#IMPLEMENTATION OF CARTPOLE WITH RANDOM SEARCH
+import gym                                             
+from IPython.display import clear_output
+from time import sleep
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import math
+              
+
+def run_episode(env, parameters):
+    observation = env.reset()
+    totalreward = 0                  
+                                                                    #Reseting the environment 
+    for _ in range(200):
+        action = 0 if np.matmul(parameters,observation) < 0 else 1  #Sets Which way the cart should move given the Parameter and observation 
+        observation, reward, done, info = env.step(action)          #show each input into env.step
+        totalreward += reward                                       # adds reward to the total
+        if done:
+            break
+    return totalreward
+                          
+def train(submit):
+    env = gym.make('CartPole-v0')
+    if submit:
+        env.monitor.start('cartpole-experiments/', force=True)
+
+    counter = 0
+    bestparams = None
+    bestreward = 0
+                                                               # Resets Counter for new interation 
+    for _ in range(10000):
+        counter += 1
+        parameters = np.random.rand(4) * 2 - 1
+        reward = run_episode(env,parameters)
+        if reward > bestreward:                                # Updates the reward if a better reward is found
+            bestreward = reward
+            bestparams = parameters                            # Will update Parameters if a better episode occours 
+            if reward == 200:                                  # 200 is set as the episodes to reach 
+                break              
+
+    if submit:                                                 # 
+        for _ in range(100):
+            run_episode(env,bestparams)
+        env.monitor.close()
+
+    return counter
+
+
+# Grapgh Creation 
+results = []
+for _ in range(1000):
+    results.append(train(submit=False))
+
+plt.hist(results,1000,normed=1, facecolor='g', alpha=0.75)
+plt.xlabel('Episodes required to reach 200')
+plt.ylabel('Frequency')
+plt.title('Random Search Cart Pole')
+plt.show()
+
+print ('Average Per Episode')
+print ( np.sum(results) / 1000.0)
+
+#IMPLEMENTATION OF CARTPOLE WITH Q-LEARNING
+
+class CartPoleQAgent():
+    def __init__(self, buckets=(3, 3, 6, 6),num_episodes=1000, min_lr=0.1, min_epsilon=0.1, discount=1.0, decay=25):
+        
+        self.buckets = buckets
+        self.num_episodes = num_episodes                                     # Different buckets ditributed to: position = 3, velocity = 3, angle = 6, and angular velocity = 6 
+        self.min_lr = min_lr
+        self.min_epsilon = min_epsilon
+        self.discount = discount                                             # This defines the different properties the agents can have
+        self.decay = decay                                                   # it then applys them to self.(parameter) to attack these to the agent
+        self.env = gym.make('CartPole-v0')                                   # This Loads the Cart Pole Evnironment
+        self.Q_table = np.zeros(self.buckets + (self.env.action_space.n,))   # This intitates the Q-table with all 0 values 
+
+        self.upper_bounds = [self.env.observation_space.high[0], 0.5, self.env.observation_space.high[2], math.radians(50) / 1.]
+        self.lower_bounds = [self.env.observation_space.low[0], -0.5, self.env.observation_space.low[2], -math.radians(50) / 1.]
+                                                                                # These upper an lower bounds denote: Position, velocity and agular velocity 
+        self.steps = np.zeros(self.num_episodes)
+
+    def discretize_state(self, obs):
+
+        # Anamlizes the observation taken of the Environment.
+        # Simplifies the ovservation seen by treating similar observation as the same
+        
+        discretized = list()
+        for i in range(len(obs)):                                          # Creates 'obs' which is a tuple that desribes the current state of the environment with 4 float values 
+            scaling = ((obs[i] + abs(self.lower_bounds[i])) / (self.upper_bounds[i] - self.lower_bounds[i]))
+            new_obs = int(round((self.buckets[i] - 1) * scaling))
+            new_obs = min(self.buckets[i] - 1, max(0, new_obs))
+            
+            discretized.append(new_obs)                                    #Outputs the tuple, which has 4 intergers that are smaller than their bucket representation and are Greater than 0 
+        return tuple(discretized)
+
+    def choose_action(self, state):
+     
+        # Greedy Algoritm Actions 0 or 1 
+        if (np.random.random() < self.epsilon):         # State :4 ints witin the range of the buckets and are greater than 0 
+            return self.env.action_space.sample() 
+        else:
+            return np.argmax(self.Q_table[state])       # Output 0 or 1 
+        
+    def get_action(self, state, e):
+      
+        obs = self.discretize_state(state)                          # State: 4 Floats used for environment description 
+        action_vector = self.Q_table[obs]
+        epsilon = self.get_epsilon(e)                               # e: Int that shows the episode that the agent should be at, used to choose ballance between know rewards and exploration,used to define epsiolon 
+        action_vector = self.normalize(action_vector, epsilon)      # Action_Vector: Containg the different action probability from the current state 
+        return action_vector
+
+    def normalize(self, action_vector, epsilon):
+ 
+        total = sum(action_vector)
+        new_vector = (1-epsilon)*action_vector/(total)                       #Action_Vector, used with creating new,vector,It contains the expected action for each action, taken from the Q Table 
+        new_vector += epsilon/2.0                                            #Epsilon: Changes based on the greedy algorithim, as to the next move made  
+        return new_vector                                                    #New_vector: Contains the probability of each state based on the current state 
+
+    def update_q(self, state, action, reward, new_state):
+
+        #Updating Q-Table based on the rules in Reinforcement Learning: An Introduction by Sutton and Barto
+        self.Q_table[state][action] += (self.learning_rate * 
+                                        (reward 
+                                         + self.discount * np.max(self.Q_table[new_state]) 
+                                         - self.Q_table[state][action]))
+
+    def get_epsilon(self, t):
+       # Gets epsilon value (as this will decrease over time)
+        return max(self.min_epsilon, min(1., 1. - math.log10((t + 1) / self.decay)))   # Maitain a small chance of exploration 
+
+    def get_learning_rate(self, t):  #Gets the Learning rate, slowly declines (like epsilop) as epsiodes increase 
+    
+        return max(self.min_lr, min(1., 1. - math.log10((t + 1) / self.decay)))
+
+    def train(self):  # Trains agent to prceed in environment, choices are made through greedy polocy and updated the q-table
+                      # Agent trained with 500 episode, epsilon and learning rate decrease over episodes 
+     
+     
+        for e in range(self.num_episodes):                           # Loops for each number of episodes 
+         
+            current_state = self.discretize_state(self.env.reset())  # Initilizes the Current_state 
+
+            self.learning_rate = self.get_learning_rate(e)           # Sets the Leanring rate and Epsilon for the agent
+            self.epsilon = self.get_epsilon(e)
+            done = False
+           
+            while not done:                                          # Loops while done is false 
+                self.steps[e] += 1
+                action = self.choose_action(current_state)           # Action chosen based on Current state 
+                # Take action
+                obs, reward, done, _ = self.env.step(action)
+                new_state = self.discretize_state(obs)
+                # Update Q(S,A)
+                self.update_q(current_state, action, reward, new_state)
+                current_state = new_state
+                
+                # We break out of the loop when done is False which is
+                # a terminal state.
+        print('Training Complete')
+    
+    def plot_learning(self):  #Plots the steps taken for each episode and prints sucessful episodes 
+    
+        sns.lineplot(range(len(self.steps)),self.steps)
+        plt.xlabel("Episode")
+        plt.ylabel("Steps")
+        plt.title('Q-Learning Cart Pole ')
+        plt.show()
+        t = 0
+        for i in range(self.num_episodes):                   # If 200 is reched then it adds 1 to t where t the tha total amount completed sucessfully 
+            if self.steps[i] == 200:
+                t+=1
+        print(t, "episodes were successfully completed.")
+        
+
+    def run(self):                            #Runs episodes
+        self.env = gym.wrappers.Monitor(self.env,'cartpole')
+        t = 0
+        done = False
+        current_state = self.discretize_state(self.env.reset())
+        while not done:
+                self.env.render()
+                t = t+1
+                action = self.choose_action(current_state)
+                obs, reward, done, _ = self.env.step(action)
+                new_state = self.discretize_state(obs)
+                current_state = new_state
+        return t
+                                        
+def load_q_learning():                        #Loads the Leaning from above and then plots, the learning 
+    agent = CartPoleQAgent()
+    agent.train()
+    agent.plot_learning()
+
+    return agent
+agent = load_q_learning()
