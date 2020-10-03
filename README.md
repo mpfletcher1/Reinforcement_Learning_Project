@@ -5,7 +5,8 @@ Taxi Problem : https://github.com/mpfletcher1/Reinforcement_Learning_Project/blo
 Cart Pole : https://github.com/mpfletcher1/Reinforcement_Learning_Project/blob/main/Cart_Pole_Q-Learning_and_Random
 Moutain Car : https://github.com/mpfletcher1/Reinforcement_Learning_Project/blob/main/Mountain_Car_Q-Learning.py
 
-All Codes sources are Referenced withing the acompanying report. 
+All Codes sources are Referenced here: https://github.com/mpfletcher1/Reinforcement_Learning_Project/blob/main/References 
+
 The Only thing that is required to be isntalled is the Atari Environment, this was simply done in Juipter notebook by adding:
 
 !pip install cmake 'gym[atari]' scipy
