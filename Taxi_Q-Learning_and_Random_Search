@@ -1,0 +1,187 @@
+!pip install cmake 'gym[atari]' scipy
+
+import gym
+from IPython.display import clear_output
+from time import sleep
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import math
+               
+env = gym.make("Taxi-v3").env
+
+env.render()                  # Shows a render of the Environment  
+                         
+env.reset()             # Envvironment is reset, Taxi location is random
+env.render()
+
+print("Action Space {}".format(env.action_space))        # Possible moves 
+print("State Space {}".format(env.observation_space))    # Number of different action across the State Space       
+
+env.reset()                  # Additional Randomisation to show change 
+env.render()
+
+print("Action Space {}".format(env.action_space))             # Shows Action space 
+print("State Space {}".format(env.observation_space))         # Show all possible senarios 
+
+env.reset()                   # Additional Randomisation to show change 
+env.render()
+
+print("Action Space {}".format(env.action_space))
+print("State Space {}".format(env.observation_space))
+
+state = env.encode(3, 1, 2, 0) # (taxi row, taxi column, passenger index, destination index)
+print("State:", state)
+
+env.s = state
+env.render()
+
+env.P[328]             # Shows the Outputs of the different action that can be make From the Taxi Location (As represented above)
+
+env.s = 328                                          # set environment to illustration's state
+
+epochs = 0
+penalties, reward = 0, 0
+
+frames = []                                         # for animation
+
+done = False
+
+while not done:
+    action = env.action_space.sample()
+    state, reward, done, info = env.step(action)
+
+    if reward == -10:                                                   
+        penalties += 1                              # Increments Penalty when incorred drop of is actioned 
+    
+                                                    # Each Frame added to a Dictionary
+    frames.append({
+        'frame': env.render(mode='ansi'),
+        'state': state,
+        'action': action,
+        'reward': reward
+        }
+    )
+
+    epochs += 1
+    
+print("Random Taxi results after 1 Episode:")    
+print("Timesteps taken: {}".format(epochs))
+print("Penalties incurred: {}".format(penalties))
+
+def print_frames(frames):                   #Animated the frames captured to show the full cource of the Taxi 
+    for i, frame in enumerate(frames):
+        clear_output(wait=True)
+        print(frame['frame'])
+        print(f"Timestep: {i + 1}")
+        print(f"State: {frame['state']}")
+        print(f"Action: {frame['action']}")
+        print(f"Reward: {frame['reward']}")
+        sleep(.1)
+        
+print_frames(frames)
+
+q_table = np.zeros([env.observation_space.n, env.action_space.n])   #Wipes the Q-Table for the Training
+%%time
+"""Training the agent"""
+
+alpha = 0.1               #  Sets the hyperparameters
+gamma = 0.6
+epsilon = 0.1
+
+all_epochs = []           # Records all episodes and rewards
+all_penalties = []
+
+for i in range(1, 100001):
+    state = env.reset()
+
+    epochs, penalties, reward, = 0, 0, 0
+    done = False
+    
+    while not done:
+        if random.uniform(0, 1) < epsilon:
+            action = env.action_space.sample()            # Explore action space, though Q-Table
+        else:
+            action = np.argmax(q_table[state])            # Explores learned values, through Q-Table
+
+        next_state, reward, done, info = env.step(action) 
+        
+        old_value = q_table[state, action]
+        next_max = np.max(q_table[next_state])
+        
+        new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)     # Uses Q Learning algorithm to choose the new value
+        q_table[state, action] = new_value
+
+        if reward == -10:                                 # Sets the -10 to be the incrament for a penalty 
+            penalties += 1                                # Incriments the Penalty counter 
+
+        state = next_state                                # Incriments the episode counter
+        epochs += 1 
+        
+    if i % 100 == 0:
+        clear_output(wait=True)
+        print(f"Episode: {i}")
+
+print("Training finished.\n")
+
+q_table[328] # Shows the Q-Valuse for Taxi at state 328
+
+#Evaluate agent's performance after Q-learning
+
+total_epochs, total_penalties = 0, 0
+episodes = 100
+
+for _ in range(episodes):                            # State is reset aswell epochs
+    state = env.reset()
+    epochs, penalties, reward = 0, 0, 0
+    
+    done = False
+    
+    while not done:
+        action = np.argmax(q_table[state])            # Action is take from the max value in the Q-table
+        state, reward, done, info = env.step(action)
+
+        if reward == -10:                             # Incriments Pentaly for Each incorrdct drop off/pick up
+            penalties += 1
+
+        epochs += 1
+
+    total_penalties += penalties                      # Adds Penalties to the total 
+    total_epochs += epochs                            # Adds Episodes to the total 
+
+print(f"Results after {episodes} episodes:")                         # Prints out the Results in a readable format
+print(f"Average timesteps per episode: {total_epochs / episodes}")
+print(f"Average penalties per episode: {total_penalties / episodes}")
+print(f"Total Timesteps: {total_epochs}")
+print(f"Total Penalties : {total_penalties}")
+
+
+#Q-Learning after 1 Episode (Done to compare Random vs q_leraning in the same setting)
+
+total_epochs, total_penalties = 0, 0
+episodes = 1
+
+for _ in range(episodes):
+    state = env.reset()
+    epochs, penalties, reward = 0, 0, 0      # Resets the Environment for Learning 
+     
+    done = False
+    
+    while not done:
+        action = np.argmax(q_table[state])
+        state, reward, done, info = env.step(action)
+
+        if reward == -10:                    # Each Wrong Drop off counts a 1 penalty, so the error made can be easily seen 
+            penalties += 1                   # Incriments the total number of Penalties 
+
+        epochs += 1                          # Increment the total numbers of Episodes(Moves) taken
+
+    total_penalties += penalties             # Sets Penality Total
+    total_epochs += epochs                   # Sets Episode Total 
+
+print(f"Q-Learning results after {episodes} episode:")
+print(f"Average timesteps per episode: {total_epochs / episodes}")
+print(f"Average penalties per episode: {total_penalties / episodes}")
+print(f"Total Timesteps: {total_epochs}")
+print(f"Total Penalties : {total_penalties}")
