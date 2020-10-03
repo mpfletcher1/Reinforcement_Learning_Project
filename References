@@ -1,0 +1,13 @@
+References to all code and research for the report are as follows: 
+
+GitHub. 2020. Joesnow7/Reinforcement-Learning. [online] Available at: <https://github.com/JoeSnow7/Reinforcement-Learning/blob/master/Cartpole%20Q-learning.ipynb> [Accessed 2 October 2020].
+Hayes, G., 2019. Getting Started With Reinforcement Learning And Open AI Gym. [online] Medium. Available at: <https://towardsdatascience.com/getting-started-with-reinforcement-learning-and-open-ai-gym-c289aca874f> [Accessed 2 October 2020].
+kevin frans blog. 2020. Simple Reinforcement Learning Methods To Learn Cartpole. [online] Available at: <http://kvfrans.com/simple-algoritms-for-solving-cartpole/> [Accessed 2 October 2020].
+Learndatasci.com. 2020. Reinforcement Q-Learning From Scratch In Python With Openai Gym. [online] Available at: <https://www.learndatasci.com/tutorials/reinforcement-q-learning-scratch-python-openai-gym/> [Accessed 2 October 2020].
+marlow, j. and Aguilera, M., 2020. Openai/Gym. [online] GitHub. Available at: <https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py> [Accessed 2 October 2020].
+Maynez, J., 2020. Using Q-Learning To Solve The Cartpole Balancing Problem. [online] Medium. Available at: <https://medium.com/@flomay/using-q-learning-to-solve-the-cartpole-balancing-problem-c0a7f47d3f9d> [Accessed 27 September 2020].
+Nagendra, S., Podila, N., Ugarakhod, R. and George, K., 2017. Comparison of reinforcement learning algorithms applied to the cart-pole problem. 2017 International Conference on Advances in Computing, Communications and Informatics (ICACCI), [online] Available at: <https://arxiv.org/ftp/arxiv/papers/1810/1810.01940.pdf> [Accessed 2 October 2020].
+Sutton, R. and Barto, A., 2014. Reinforcement Learning: An Introduction. 1st ed. [ebook] Massachusetts London: The MIT Press Cambridge. Available at: <https://inst.eecs.berkeley.edu/~cs188/sp20/assets/files/SuttonBartoIPRLBook2ndEd.pdf> [Accessed 26 September 2020].
+Vilches, V., 2017. Vmayoral/Basic_Reinforcement_Learning. [online] GitHub. Available at: <https://github.com/vmayoral/basic_reinforcement_learning/tree/master/tutorial4> [Accessed 2 October 2020].
+Vilches, V., 2017. Vmayoral/Basic_Reinforcement_Learning. [online] GitHub. Available at: <https://github.com/vmayoral/basic_reinforcement_learning/blob/master/tutorial4/q-learning-gym-1.py> [Accessed 2 October 2020].
+
